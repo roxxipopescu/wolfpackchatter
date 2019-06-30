@@ -3,6 +3,8 @@ import App from './App.vue'
 import store from './store'
 import 'bootstrap'; 
 import 'bootstrap/dist/css/bootstrap.min.css';
+import jQuery from 'jquery';
+window.$ = jQuery;
 
 Vue.config.productionTip = false
 

@@ -7,6 +7,10 @@
       </div>
       <div class="open-chat">
         <img class="user-picture" src="../../static/images/user-picture.png"/>
+        <span class="username">{{username}}</span>
+        <div class="chats-container">
+          <input type="text" class="search-inputfield form-control" v-model="search" placeholder="Chat name"/>
+        </div>
       </div>
     </div>
   </div>
@@ -20,7 +24,8 @@ export default {
 
   data: function() {
     return {
-      username: ""
+      username: "",
+      search: ""
     };
   },
   mounted: function(){
@@ -37,7 +42,8 @@ export default {
   },
   methods:{
     openChat(){
-      alert(this.username);
+      $('.chat-init').hide();
+      $('.open-chat').show();
     }
   }
 }

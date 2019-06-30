@@ -34,3 +34,23 @@
 .user-picture{
     height: 85px;
 }
+
+.open-chat{
+    display: none;
+}
+
+.username{
+    font-size: 24px;
+    margin-left: 40px;
+}
+
+
+.chats-container{
+    padding: 10px;
+    margin-top: 20px;
+    border: 1px solid grey;
+    border-radius: 3px;
+}
+.search-inputfield{
+    width: 85%;
+}
