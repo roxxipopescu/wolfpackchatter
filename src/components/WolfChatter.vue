@@ -3,6 +3,12 @@
     <div class="choose-location">
       {{chooseLocation}}
     </div>
+    <div class="new-chat">
+      <p class="title">{{newChat}}</p>
+      <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
+      <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
+      <button class="create-chat btn btn-dark" type="button" v-on:click="createNewChat()">Create</button>
+    </div>
     <div class="chat-panel">
       <div class="chat-init">
         <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
@@ -39,17 +45,25 @@ export default {
     return {
       username: "",
       search: "",
+      chatName: "",
       emptyChatsMsg: "Nothing to show here.",
       plusButtonInfo: "Use the + button to create a new chat",
       yourNamePlaceholder: "Your name",
       chooseLocation: "Choose the chat location on the map",
+      newChat: "New Chat",
+      latTxt: "Latitude",
+      longTxt: "Longitude",
+      nameThisChat: "Name this chat",
       map: {},
       myIcon: {},
-      marker: {}
+      marker: {},
+      removedFirst: 0,
+      lat: "",
+      long: ""
     };
   },
   mounted: function(){
-
+    // Create a Tile Layer and add it to the map
     var tiles = new L.tileLayer('http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png');
     // Initialize the map and assign it to a variable for later use
     this.map = L.map('map', {
@@ -59,9 +73,6 @@ export default {
         zoom: 5,
         layers: [tiles]
     });
-
-    // Create a Tile Layer and add it to the map
-   
 
     this.myIcon = L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon.png',
@@ -77,23 +88,31 @@ export default {
   },
   
   methods:{
+    createNewChat(){
+      console.log('hey');
+    },
     addMarker(e){     
-      if(this.marker){
+      if(!$.isEmptyObject(this.marker)){ 
         this.map.removeLayer(this.marker);
+        this.removedFirst = 1;
       }
-      this.marker = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.map);        
+      this.lat = parseFloat(e.latlng.lat).toFixed(2); 
+      this.long = parseFloat(e.latlng.lng).toFixed(2); 
+      this.marker = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.map);      
+      if (this.removedFirst == 1){
+        $('.choose-location').hide();
+        $('.new-chat').show();
+      }  
     },
     openChat(){
       $('.chat-init').hide();
       $('.open-chat').show();
     },
-    addNewChat(event){
-      $('.choose-location').show();
-      
-      
-        this.map.on('click', this.addMarker);
-      
+    addNewChat(){ 
+      $('.choose-location').show();   
+      this.map.on('click', this.addMarker);
     }
+   
   }
 }
 </script>
