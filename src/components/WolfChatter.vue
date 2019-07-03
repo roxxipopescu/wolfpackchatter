@@ -1,20 +1,20 @@
 <template>
   <div id="map">
-    <div class="choose-location">
+    <div v-if="showChatLocationPopup" class="choose-location">
       {{chooseLocation}}
     </div>
-    <div class="new-chat">
-      <p class="title">{{newChat}}</p>
+    <div v-if="showNewChatPopup" class="new-chat">
+      <p class="title">{{newChatTxt}}</p>
       <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
       <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
       <button class="create-chat btn btn-dark" type="button" v-on:click="createNewChat()">Create</button>
     </div>
     <div class="chat-panel">
-      <div class="chat-init">
+      <div v-if="!initChat" class="chat-init">
         <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
         <button class="start-chat btn btn-dark" type="button" v-on:click="openChat()">Start chatting</button>
       </div>
-      <div class="open-chat">
+      <div v-if="initChat" class="open-chat">
         <img class="user-picture" src="../../static/images/user-picture.png"/>
         <span class="username">{{username}}</span>
         <div class="chats-container">
@@ -22,9 +22,16 @@
           <input type="text" class="search-inputfield form-control" v-model="search" placeholder="Chat name"/>
           <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
           <div class="chatlist">
-            <div class="empty-chatlist">
+            <div v-if="Object.keys(chatList).length == 0" class="empty-chatlist">
               <p>{{emptyChatsMsg}}</p>
               <p>{{plusButtonInfo}}</p>
+            </div>
+            <div v-else> 
+              <div class="chats" :key="index" v-for="(chat, index) in chatList"> {{chat}}
+                <div class="chat-title">{{chat.name}}</div>
+                <div class="chat-coords">{{latTxt}} {{chat.lat}}, {{longTxt}} {{chat.lng}}</div>
+                <i class="fa fa-chevron-right"></i>
+              </div>
             </div>
           </div>
         </div>
@@ -50,7 +57,7 @@ export default {
       plusButtonInfo: "Use the + button to create a new chat",
       yourNamePlaceholder: "Your name",
       chooseLocation: "Choose the chat location on the map",
-      newChat: "New Chat",
+      newChatTxt: "New Chat",
       latTxt: "Latitude",
       longTxt: "Longitude",
       nameThisChat: "Name this chat",
@@ -59,7 +66,14 @@ export default {
       marker: {},
       removedFirst: 0,
       lat: "",
-      long: ""
+      long: "",
+      newChat: {},
+      chatList: {},
+      chatId: 0,
+      showNewChatPopup: false,
+      showChatLocationPopup: false,
+      initChat: false
+
     };
   },
   mounted: function(){
@@ -89,7 +103,22 @@ export default {
   
   methods:{
     createNewChat(){
-      console.log('hey');
+      this.newChat['name'] = this.chatName;
+      this.newChat['lat'] = this.lat;
+      this.newChat['lng'] = this.long;
+      this.chatList[this.chatId] = this.newChat;
+      this.$set(this.chatList, this.chatId, this.newChat);
+      console.log(this.chatList);
+      this.chatId++;
+      localStorage.setItem('storedChats', JSON.stringify(this.chatList));
+      localStorage.setItem('currentChatId', JSON.stringify(this.chatId));
+      console.log(this.newChat);
+      this.showNewChatPopup = false;
+    },
+    markerDrag(){
+      let latlng = this.marker.getLatLng();
+      this.lat = parseFloat(latlng.lat).toFixed(2); 
+      this.long = parseFloat(latlng.lng).toFixed(2); 
     },
     addMarker(e){     
       if(!$.isEmptyObject(this.marker)){ 
@@ -98,18 +127,25 @@ export default {
       }
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
       this.long = parseFloat(e.latlng.lng).toFixed(2); 
-      this.marker = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.map);      
+      this.marker = L.marker(e.latlng, {icon: this.myIcon, draggable: true}).addTo(this.map);      
       if (this.removedFirst == 1){
-        $('.choose-location').hide();
-        $('.new-chat').show();
+        this.showChatLocationPopup = false;  
+        this.showNewChatPopup = true;
+        this.map.off('click', this.addMarker);
+        this.marker.on('drag', this.markerDrag);
       }  
     },
     openChat(){
-      $('.chat-init').hide();
-      $('.open-chat').show();
+      this.initChat = true;
+
+      if (JSON.parse(localStorage.getItem('storedChats'))){
+        this.chatList = JSON.parse(localStorage.getItem('storedChats'));
+        this.chatId = JSON.parse(localStorage.getItem('currentChatId'));
+      }
+     
     },
     addNewChat(){ 
-      $('.choose-location').show();   
+      this.showChatLocationPopup = true;  
       this.map.on('click', this.addMarker);
     }
    
