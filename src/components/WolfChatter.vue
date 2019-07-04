@@ -22,12 +22,12 @@
           <input type="text" class="search-inputfield form-control" v-model="search" placeholder="Chat name"/>
           <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
           <div class="chatlist">
-            <div v-if="Object.keys(chatList).length == 0" class="empty-chatlist">
+            <div v-if="chatList.length == 0" class="empty-chatlist">
               <p>{{emptyChatsMsg}}</p>
               <p>{{plusButtonInfo}}</p>
             </div>
             <div v-else> 
-              <div class="chats" :key="index" v-for="(chat, index) in chatList"> {{chat}}
+              <div class="chats" :key="index" v-for="(chat, index) in chatList">
                 <div class="chat-title">{{chat.name}}</div>
                 <div class="chat-coords">{{latTxt}} {{chat.lat}}, {{longTxt}} {{chat.lng}}</div>
                 <i class="fa fa-chevron-right"></i>
@@ -68,8 +68,7 @@ export default {
       lat: "",
       long: "",
       newChat: {},
-      chatList: {},
-      chatId: 0,
+      chatList: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
       initChat: false
@@ -103,16 +102,13 @@ export default {
   
   methods:{
     createNewChat(){
+      this.newChat = {};
       this.newChat['name'] = this.chatName;
       this.newChat['lat'] = this.lat;
       this.newChat['lng'] = this.long;
-      this.chatList[this.chatId] = this.newChat;
-      this.$set(this.chatList, this.chatId, this.newChat);
-      console.log(this.chatList);
-      this.chatId++;
+      this.chatList.push(this.newChat);      
       localStorage.setItem('storedChats', JSON.stringify(this.chatList));
-      localStorage.setItem('currentChatId', JSON.stringify(this.chatId));
-      console.log(this.newChat);
+      localStorage.setItem('currentChatId', JSON.stringify(this.chatId));  
       this.showNewChatPopup = false;
     },
     markerDrag(){
@@ -121,7 +117,7 @@ export default {
       this.long = parseFloat(latlng.lng).toFixed(2); 
     },
     addMarker(e){     
-      if(!$.isEmptyObject(this.marker)){ 
+      if(!$.isEmptyObject(this.marker)){ console.log(e.latlng);
         this.map.removeLayer(this.marker);
         this.removedFirst = 1;
       }
@@ -129,23 +125,23 @@ export default {
       this.long = parseFloat(e.latlng.lng).toFixed(2); 
       this.marker = L.marker(e.latlng, {icon: this.myIcon, draggable: true}).addTo(this.map);      
       if (this.removedFirst == 1){
+        this.removedFirst = 0;
         this.showChatLocationPopup = false;  
         this.showNewChatPopup = true;
         this.map.off('click', this.addMarker);
-        this.marker.on('drag', this.markerDrag);
+        this.marker.on('drag', this.markerDrag); 
       }  
     },
     openChat(){
       this.initChat = true;
-
       if (JSON.parse(localStorage.getItem('storedChats'))){
         this.chatList = JSON.parse(localStorage.getItem('storedChats'));
-        this.chatId = JSON.parse(localStorage.getItem('currentChatId'));
       }
      
     },
     addNewChat(){ 
       this.showChatLocationPopup = true;  
+      this.chatName = "";
       this.map.on('click', this.addMarker);
     }
    
