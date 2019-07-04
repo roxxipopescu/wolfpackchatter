@@ -12,26 +12,35 @@
     <div class="chat-panel">
       <div v-if="!initChat" class="chat-init">
         <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
-        <button class="start-chat btn btn-dark" type="button" v-on:click="openChat()">Start chatting</button>
+        <button class="start-chat btn btn-dark" type="button" v-on:click="start()">Start chatting</button>
       </div>
       <div v-if="initChat" class="open-chat">
         <img class="user-picture" src="../../static/images/user-picture.png"/>
         <span class="username">{{username}}</span>
         <div class="chats-container">
-          <i class="fa fa-search"></i>
-          <input type="text" class="search-inputfield form-control" v-model="search" placeholder="Chat name"/>
-          <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
-          <div class="chatlist">
+          <div class="search-container" v-if="showChatList">
+            <i class="fa fa-search"></i>
+            <input type="text" class="search-inputfield form-control" v-model="searchQuery" :placeholder="searchTxt" />
+            <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
+          </div>
+          <div class="chatlist" v-if="showChatList">
             <div v-if="chatList.length == 0" class="empty-chatlist">
               <p>{{emptyChatsMsg}}</p>
               <p>{{plusButtonInfo}}</p>
             </div>
             <div v-else> 
-              <div class="chats" :key="index" v-for="(chat, index) in chatList">
+              <div class="chats" :key="index" v-for="(chat, index) in filteredChatsList" v-on:click="openChat(chat, index)">
                 <div class="chat-title">{{chat.name}}</div>
                 <div class="chat-coords">{{latTxt}} {{chat.lat}}, {{longTxt}} {{chat.lng}}</div>
                 <i class="fa fa-chevron-right"></i>
               </div>
+            </div>
+          </div>
+          <div v-else class="opened-chat">
+            <i class="fa fa-chevron-left" v-on:click="exitChat(openedChatIndex)"></i>
+            <div class="chat-title">{{openedChat.name}}</div>
+            <div class="chat-body"> 
+
             </div>
           </div>
         </div>
@@ -50,9 +59,6 @@ export default {
 
   data: function() {
     return {
-      username: "",
-      search: "",
-      chatName: "",
       emptyChatsMsg: "Nothing to show here.",
       plusButtonInfo: "Use the + button to create a new chat",
       yourNamePlaceholder: "Your name",
@@ -61,19 +67,27 @@ export default {
       latTxt: "Latitude",
       longTxt: "Longitude",
       nameThisChat: "Name this chat",
-      map: {},
-      myIcon: {},
-      marker: {},
-      markerList: [],
-      removedFirst: 0,
+      searchTxt: "Chat name",
+      username: "",
+      searchQuery: "",
+      chatName: "",
       lat: "",
       long: "",
+      openedChat: "",
+      openedChatIndex: "",
+      map: {},
+      myIcon: {},
+      selectedChatIcon: {},
+      marker: {},
       newChat: {},
+      markerList: [],
       chatList: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
+      showChatList: true,
       initChat: false,
-      markerIndex: 0
+      markerIndex: 0,
+      removedFirst: 0,
 
     };
   },
@@ -93,6 +107,17 @@ export default {
         iconUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon.png',
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon-2x.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-shadow.png',
+        iconSize:    [25, 41],
+        iconAnchor:  [12, 41],
+        popupAnchor: [1, -34],
+        tooltipAnchor: [16, -28],
+        shadowSize:  [41, 41]
+    });
+
+    this.selectedChatIcon = L.icon({
+        iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconRetinaUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
         iconSize:    [25, 41],
         iconAnchor:  [12, 41],
         popupAnchor: [1, -34],
@@ -136,7 +161,7 @@ export default {
         this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.map);   
       }
     },
-    openChat(){
+    start(){
       this.initChat = true;
       if (JSON.parse(localStorage.getItem('storedChats'))){
          this.renderStoredData();
@@ -146,6 +171,29 @@ export default {
       this.showChatLocationPopup = true;  
       this.chatName = "";
       this.map.on('click', this.addMarker);
+    },
+    openChat(chat, index){
+      this.showChatList = false;
+      this.openedChat = chat;
+      this.openedChatIndex = index;
+      this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.map); 
+
+    },
+    exitChat(index){
+      this.map.removeLayer(this.markerList[index]);
+      this.showChatList = true;
+    }
+  },
+
+  computed:{
+    filteredChatsList(){
+      if (this.searchQuery){
+        return this.chatList.filter((item)=>{
+        return item.name.startsWith(this.searchQuery);
+      })
+      }else{
+        return this.chatList;
+      }
     }
   }
 }

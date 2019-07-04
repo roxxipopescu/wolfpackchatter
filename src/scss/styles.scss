@@ -88,14 +88,29 @@
         color: #6c757d;
         margin-top: 5px;
     }
-    .chat-title{
-        font-size: 18px;
-    }
+    
     .fa-chevron-right{
         font-size: 32px;
         float: right;
         position: relative;
         bottom: 10px;
+    }
+}
+
+.chat-title{
+    font-size: 18px;
+}
+
+.opened-chat{
+    text-align: center;
+    .fa-chevron-left{
+        font-size: 32px;
+        float: left;
+        position: relative;
+        cursor: pointer;
+    }
+    .chat-title{
+        display: inline-block;
     }
 }
 
