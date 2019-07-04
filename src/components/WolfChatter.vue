@@ -88,7 +88,7 @@ export default {
       initChat: false,
       markerIndex: 0,
       removedFirst: 0,
-
+      featureGroup: {}
     };
   },
   mounted: function(){
@@ -102,6 +102,8 @@ export default {
         zoom: 5,
         layers: [tiles]
     });
+
+    this.featureGroup = L.featureGroup().addTo(this.map).on("click", this.groupClick);
 
     this.myIcon = L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon.png',
@@ -145,7 +147,8 @@ export default {
       }
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
       this.long = parseFloat(e.latlng.lng).toFixed(2);      
-      this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.map);   
+      this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
+      this.markerList[this.markerIndex].chatIndex = this.markerIndex;
       if (this.removedFirst == 1){
         this.removedFirst = 0;
         this.showChatLocationPopup = false;  
@@ -158,7 +161,8 @@ export default {
       this.chatList = JSON.parse(localStorage.getItem('storedChats'));
       this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
       for (let i=0; i<this.chatList.length; i++){
-        this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.map);   
+        this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.featureGroup);  
+        this.markerList[i].chatIndex = i; 
       }
     },
     start(){
@@ -172,7 +176,7 @@ export default {
       this.chatName = "";
       this.map.on('click', this.addMarker);
     },
-    openChat(chat, index){
+    openChat(chat, index){ console.log(chat, index);
       this.showChatList = false;
       this.openedChat = chat;
       this.openedChatIndex = index;
@@ -182,6 +186,14 @@ export default {
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
       this.showChatList = true;
+    },
+    groupClick(e){
+      for (let i=0; i<this.chatList.length; i++){ 
+        if(e.layer.chatIndex == i){ 
+          this.openChat(this.chatList[i], i);
+        }
+      }
+      //console.log(e.layer.chatIndex);
     }
   },
 
