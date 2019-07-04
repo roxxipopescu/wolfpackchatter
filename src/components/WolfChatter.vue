@@ -64,6 +64,7 @@ export default {
       map: {},
       myIcon: {},
       marker: {},
+      markerList: [],
       removedFirst: 0,
       lat: "",
       long: "",
@@ -71,7 +72,8 @@ export default {
       chatList: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
-      initChat: false
+      initChat: false,
+      markerIndex: 0
 
     };
   },
@@ -108,43 +110,43 @@ export default {
       this.newChat['lng'] = this.long;
       this.chatList.push(this.newChat);      
       localStorage.setItem('storedChats', JSON.stringify(this.chatList));
-      localStorage.setItem('currentChatId', JSON.stringify(this.chatId));  
+      localStorage.setItem('markerIndex', JSON.stringify(this.markerIndex)); 
       this.showNewChatPopup = false;
     },
-    markerDrag(){
-      let latlng = this.marker.getLatLng();
-      this.lat = parseFloat(latlng.lat).toFixed(2); 
-      this.long = parseFloat(latlng.lng).toFixed(2); 
-    },
     addMarker(e){     
-      if(!$.isEmptyObject(this.marker)){ console.log(e.latlng);
-        this.map.removeLayer(this.marker);
+      if(!$.isEmptyObject(this.markerList[this.markerIndex])){ 
+        this.map.removeLayer(this.markerList[this.markerIndex]);
         this.removedFirst = 1;
       }
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
-      this.long = parseFloat(e.latlng.lng).toFixed(2); 
-      this.marker = L.marker(e.latlng, {icon: this.myIcon, draggable: true}).addTo(this.map);      
+      this.long = parseFloat(e.latlng.lng).toFixed(2);      
+      this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.map);   
       if (this.removedFirst == 1){
         this.removedFirst = 0;
         this.showChatLocationPopup = false;  
         this.showNewChatPopup = true;
         this.map.off('click', this.addMarker);
-        this.marker.on('drag', this.markerDrag); 
+        this.markerIndex++;
       }  
+    },
+    renderStoredData(){
+      this.chatList = JSON.parse(localStorage.getItem('storedChats'));
+      this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
+      for (let i=0; i<this.chatList.length; i++){
+        this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.map);   
+      }
     },
     openChat(){
       this.initChat = true;
       if (JSON.parse(localStorage.getItem('storedChats'))){
-        this.chatList = JSON.parse(localStorage.getItem('storedChats'));
+         this.renderStoredData();
       }
-     
     },
     addNewChat(){ 
       this.showChatLocationPopup = true;  
       this.chatName = "";
       this.map.on('click', this.addMarker);
     }
-   
   }
 }
 </script>
