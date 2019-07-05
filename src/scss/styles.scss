@@ -19,6 +19,12 @@
     border-radius: 2px;
     padding: 10px;
     cursor: default;
+    &.chat-active{
+        width: 400px;
+        .user-info{
+            text-align: center;
+        }
+    }
 }
 
 .name-inputfield{
@@ -69,6 +75,8 @@
 }
 .chatlist{
     margin-top: 20px;
+    overflow-y: auto;
+    max-height: 485px;
     .empty-chatlist{
         p{
             font-size: 15px;
@@ -112,6 +120,19 @@
     .chat-title{
         display: inline-block;
     }
+    .messages{
+        height: 460px;
+        overflow-y: auto;
+    }
+    .msg-input{
+        padding-top: 10px;
+        .msg-inputfield{
+            margin-right: 12px;
+            border-top-right-radius: .25rem;
+            border-bottom-right-radius: .25rem;
+        }
+    }
+    
 }
 
 .choose-location{

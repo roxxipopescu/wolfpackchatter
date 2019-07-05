@@ -7,16 +7,18 @@
       <p class="title">{{newChatTxt}}</p>
       <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
       <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
-      <button class="create-chat btn btn-dark" type="button" v-on:click="createNewChat()">Create</button>
+      <button class="create-chat btn btn-dark" type="button" v-on:click="createNewChat()">{{create}}</button>
     </div>
     <div class="chat-panel">
       <div v-if="!initChat" class="chat-init">
         <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
-        <button class="start-chat btn btn-dark" type="button" v-on:click="start()">Start chatting</button>
+        <button class="start-chat btn btn-dark" type="button" v-on:click="start()">{{startTxt}}</button>
       </div>
       <div v-if="initChat" class="open-chat">
-        <img class="user-picture" src="../../static/images/user-picture.png"/>
-        <span class="username">{{username}}</span>
+        <div class="user-info">
+          <img class="user-picture" src="../../static/images/user-picture.png"/>
+          <span class="username">{{username}}</span>
+        </div>
         <div class="chats-container">
           <div class="search-container" v-if="showChatList">
             <i class="fa fa-search"></i>
@@ -40,7 +42,13 @@
             <i class="fa fa-chevron-left" v-on:click="exitChat(openedChatIndex)"></i>
             <div class="chat-title">{{openedChat.name}}</div>
             <div class="chat-body"> 
+              <div class="messages">
 
+              </div>
+              <div class="msg-input input-group">
+                <input type="text" class="msg-inputfield form-control" v-model="message" :placeholder="typeTxt" />
+                <button class="send-msg btn btn-dark" type="button" v-on:click="send(message)">{{sendTxt}}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -61,13 +69,17 @@ export default {
     return {
       emptyChatsMsg: "Nothing to show here.",
       plusButtonInfo: "Use the + button to create a new chat",
+      create: "Create",
       yourNamePlaceholder: "Your name",
+      startTxt: "Start chatting",
       chooseLocation: "Choose the chat location on the map",
       newChatTxt: "New Chat",
       latTxt: "Latitude",
       longTxt: "Longitude",
       nameThisChat: "Name this chat",
       searchTxt: "Chat name",
+      typeTxt: "Type a message",
+      sendTxt: "Send",
       username: "",
       searchQuery: "",
       chatName: "",
@@ -75,6 +87,7 @@ export default {
       long: "",
       openedChat: "",
       openedChatIndex: "",
+      message: "",
       map: {},
       myIcon: {},
       selectedChatIcon: {},
@@ -140,7 +153,7 @@ export default {
       localStorage.setItem('markerIndex', JSON.stringify(this.markerIndex)); 
       this.showNewChatPopup = false;
     },
-    addMarker(e){     
+    addMarker(e){ 
       if(!$.isEmptyObject(this.markerList[this.markerIndex])){ 
         this.map.removeLayer(this.markerList[this.markerIndex]);
         this.removedFirst = 1;
@@ -175,17 +188,20 @@ export default {
       this.showChatLocationPopup = true;  
       this.chatName = "";
       this.map.on('click', this.addMarker);
+     
     },
-    openChat(chat, index){ console.log(chat, index);
+    openChat(chat, index){ 
       this.showChatList = false;
       this.openedChat = chat;
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.map); 
-
+      $(".chat-panel").addClass("chat-active");
     },
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
       this.showChatList = true;
+      this.searchQuery = "";
+      $(".chat-panel").removeClass("chat-active");
     },
     groupClick(e){
       for (let i=0; i<this.chatList.length; i++){ 
@@ -193,7 +209,9 @@ export default {
           this.openChat(this.chatList[i], i);
         }
       }
-      //console.log(e.layer.chatIndex);
+    },
+    send(msg){
+      console.log(msg);
     }
   },
 
