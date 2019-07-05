@@ -43,12 +43,19 @@
             <div class="chat-title">{{openedChat.name}}</div>
             <div class="chat-body"> 
               <div class="messages">
-
+                  <div v-for="(msg, index) in messages" :key="index" class="msg-bubble">
+                    <div class="msg-data" :class="msg.user == username ? 'right':''">
+                      <div class="userName">{{msg.user}}</div> 
+                      <div class="sentMsg">{{msg.message}}</div>
+                    </div>
+                  </div>
               </div>
-              <div class="msg-input input-group">
-                <input type="text" class="msg-inputfield form-control" v-model="message" :placeholder="typeTxt" />
-                <button class="send-msg btn btn-dark" type="button" v-on:click="send(message)">{{sendTxt}}</button>
-              </div>
+              <form @submit.prevent="sendMessage">
+                <div class="msg-input input-group">
+                  <input type="text" class="msg-inputfield form-control" v-model="message" :placeholder="typeTxt" />
+                  <button class="send-msg btn btn-dark" type="submit">{{sendTxt}}</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -62,6 +69,7 @@ import "leaflet/dist/leaflet.css"
 import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
 import $ from 'jquery';
+import io from 'socket.io-client';
 
 export default {
 
@@ -95,13 +103,15 @@ export default {
       newChat: {},
       markerList: [],
       chatList: [],
+      messages: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
       showChatList: true,
       initChat: false,
       markerIndex: 0,
       removedFirst: 0,
-      featureGroup: {}
+      featureGroup: {},
+      socket: io('localhost:3000')
     };
   },
   mounted: function(){
@@ -139,7 +149,12 @@ export default {
         tooltipAnchor: [16, -28],
         shadowSize:  [41, 41]
     });
-    
+    this.socket.on('message', (data) => {
+      this.messages = [...this.messages, data];
+      this.$nextTick(function () { 
+        $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
+      });
+    });
   },
   
   methods:{
@@ -183,6 +198,7 @@ export default {
       if (JSON.parse(localStorage.getItem('storedChats'))){
          this.renderStoredData();
       }
+      this.socket.emit('join', this.username);
     },
     addNewChat(){ 
       this.showChatLocationPopup = true;  
@@ -210,8 +226,9 @@ export default {
         }
       }
     },
-    send(msg){
-      console.log(msg);
+    sendMessage(){
+      this.socket.emit('message', this.message);
+      this.message = ''
     }
   },
 
