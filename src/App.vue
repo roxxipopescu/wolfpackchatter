@@ -3,7 +3,6 @@
     <WolfChatter/>
   </div>
 </template>
-<script src="../static/texts/defaultTexts.js"></script>
 <script>
 import WolfChatter from './components/WolfChatter.vue'
 

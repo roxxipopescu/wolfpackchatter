@@ -4,15 +4,19 @@
       {{chooseLocation}}
     </div>
     <div v-if="showNewChatPopup" class="new-chat">
-      <p class="title">{{newChatTxt}}</p>
-      <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
-      <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
-      <button class="create-chat btn btn-dark" type="button" v-on:click="createNewChat()">{{create}}</button>
+      <form @submit.prevent="createNewChat()">
+        <p class="title">{{newChatTxt}}</p>
+        <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
+        <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
+        <button class="create-chat btn btn-dark" type="submit">{{create}}</button>
+      </form>
     </div>
     <div class="chat-panel">
       <div v-if="!initChat" class="chat-init">
-        <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
-        <button class="start-chat btn btn-dark" type="button" v-on:click="start()">{{startTxt}}</button>
+        <form @submit.prevent="start()">
+          <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
+          <button class="start-chat btn btn-dark" type="submit">{{startTxt}}</button>
+        </form>
       </div>
       <div v-if="initChat" class="open-chat">
         <div class="user-info">
@@ -43,7 +47,7 @@
             <div class="chat-title">{{openedChat.name}}</div>
             <div class="chat-body"> 
               <div class="messages">
-                  <div v-for="(msg, index) in messages" :key="index" class="msg-bubble">
+                  <div v-for="(msg, index) in messagesByChat" :key="index" class="msg-bubble">
                     <div class="msg-data" :class="msg.user == username ? 'right':''">
                       <div class="userName">{{msg.user}}</div> 
                       <div class="sentMsg">{{msg.message}}</div>
@@ -104,6 +108,7 @@ export default {
       markerList: [],
       chatList: [],
       messages: [],
+      messagesByChat: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
       showChatList: true,
@@ -149,8 +154,13 @@ export default {
         tooltipAnchor: [16, -28],
         shadowSize:  [41, 41]
     });
-    this.socket.on('message', (data) => {
+    this.socket.on('message', (data) => { 
       this.messages = [...this.messages, data];
+      this.messagesByChat = this.messages.filter((msg) => {
+          if(msg.chatId ==  this.openedChatIndex) return msg;
+        }
+      );console.log('messages by chat', this.messagesByChat);
+      localStorage.setItem('storedMessagesByChat', JSON.stringify(this.messagesByChat));
       this.$nextTick(function () { 
         $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
       });
@@ -173,10 +183,12 @@ export default {
         this.map.removeLayer(this.markerList[this.markerIndex]);
         this.removedFirst = 1;
       }
+
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
       this.long = parseFloat(e.latlng.lng).toFixed(2);      
       this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
       this.markerList[this.markerIndex].chatIndex = this.markerIndex;
+
       if (this.removedFirst == 1){
         this.removedFirst = 0;
         this.showChatLocationPopup = false;  
@@ -212,6 +224,14 @@ export default {
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.map); 
       $(".chat-panel").addClass("chat-active");
+      if (this.messages.length == 0){ console.log('da');
+        this.messagesByChat = JSON.parse(localStorage.getItem('storedMessagesByChat'));
+      }else{
+        this.messagesByChat = this.messages.filter((msg) => {
+            if(msg.chatId == index) return msg;
+          }
+        );
+      }
     },
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
@@ -227,7 +247,7 @@ export default {
       }
     },
     sendMessage(){
-      this.socket.emit('message', this.message);
+      this.socket.emit('message', this.message, this.openedChatIndex);
       this.message = ''
     }
   },
@@ -236,7 +256,7 @@ export default {
     filteredChatsList(){
       if (this.searchQuery){
         return this.chatList.filter((item)=>{
-        return item.name.startsWith(this.searchQuery);
+        return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
       })
       }else{
         return this.chatList;

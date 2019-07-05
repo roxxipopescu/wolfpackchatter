@@ -4,7 +4,7 @@ const http = require('http').Server(app)
 const io = require('socket.io')(http)
 
 io.on('connection', (socket) => {
-  socket.on('message', (msg) => io.emit('message', { 'user': socket.username, 'message': msg } ))
+  socket.on('message', (msg, chatId) => io.emit('message', { 'user': socket.username, 'message': msg, 'chatId': chatId } ))
   socket.on('join', (username) => {
     socket.username = username;
   })
