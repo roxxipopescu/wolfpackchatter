@@ -46,7 +46,7 @@
             <i class="fa fa-chevron-left" v-on:click="exitChat(openedChatIndex)"></i>
             <div class="chat-title">{{openedChat.name}}</div>
             <div class="chat-body"> 
-              <div class="messages">
+              <div class="messages" ref="messages">
                   <div v-for="(msg, index) in messagesByChat" :key="index" class="msg-bubble">
                     <div class="msg-data" :class="msg.user == username ? 'right':''">
                       <div class="userName">{{msg.user}}</div> 
@@ -154,15 +154,24 @@ export default {
         tooltipAnchor: [16, -28],
         shadowSize:  [41, 41]
     });
+
+    this.$nextTick(function () {
+      console.log(this.$refs.messages);
+    });
+
+
     this.socket.on('message', (data) => { 
-      this.messages = [...this.messages, data];
+      this.messages = [...this.messages, data]; 
+      localStorage.setItem('storedMessages', JSON.stringify(this.messages));
       this.messagesByChat = this.messages.filter((msg) => {
           if(msg.chatId ==  this.openedChatIndex) return msg;
         }
-      );console.log('messages by chat', this.messagesByChat);
-      localStorage.setItem('storedMessagesByChat', JSON.stringify(this.messagesByChat));
-      this.$nextTick(function () { 
-        $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
+      );
+      
+      this.$nextTick(function () {
+        if ($('.messages').length!=0){
+          $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
+        }
       });
     });
   },
@@ -224,14 +233,22 @@ export default {
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.map); 
       $(".chat-panel").addClass("chat-active");
-      if (this.messages.length == 0){ console.log('da');
-        this.messagesByChat = JSON.parse(localStorage.getItem('storedMessagesByChat'));
-      }else{
-        this.messagesByChat = this.messages.filter((msg) => {
+      
+      if (this.messages.length == 0){ 
+        if (JSON.parse(localStorage.getItem('storedMessages')) !== null){
+          this.messages = JSON.parse(localStorage.getItem('storedMessages')); 
+          this.messagesByChat = this.messages.filter((msg) => { 
             if(msg.chatId == index) return msg;
-          }
-        );
+          });
+        }
+        
+      }else{
+        this.messagesByChat = this.messages.filter((msg) => { 
+            if(msg.chatId == index) return msg;
+          });
+        
       }
+      
     },
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
