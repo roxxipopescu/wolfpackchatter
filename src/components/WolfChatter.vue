@@ -268,7 +268,7 @@ export default {
   computed:{
     filteredChatsList(){
       if (this.searchQuery){
-        return this.chatList.filter((item, index)=>{ 
+        return this.chatList.filter((item)=>{ 
         return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
       })
       }
