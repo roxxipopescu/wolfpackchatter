@@ -27,6 +27,7 @@
           <div class="search-container" v-if="showChatList">
             <i class="fa fa-search"></i>
             <input type="text" class="search-inputfield form-control" v-model="searchQuery" :placeholder="searchTxt" />
+            <i v-if="searchQuery" class="fa fa-times" v-on:click="clearSearch()"></i>
             <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
           </div>
           <div class="chatlist" v-if="showChatList">
@@ -46,7 +47,7 @@
             <i class="fa fa-chevron-left" v-on:click="exitChat(openedChatIndex)"></i>
             <div class="chat-title">{{openedChat.name}}</div>
             <div class="chat-body"> 
-              <div class="messages" ref="messages">
+              <div class="messages">
                   <div v-for="(msg, index) in messagesByChat" :key="index" class="msg-bubble">
                     <div class="msg-data" :class="msg.user == username ? 'right':''">
                       <div class="userName">{{msg.user}}</div> 
@@ -155,11 +156,6 @@ export default {
         shadowSize:  [41, 41]
     });
 
-    this.$nextTick(function () {
-      console.log(this.$refs.messages);
-    });
-
-
     this.socket.on('message', (data) => { 
       this.messages = [...this.messages, data]; 
       localStorage.setItem('storedMessages', JSON.stringify(this.messages));
@@ -167,13 +163,13 @@ export default {
           if(msg.chatId ==  this.openedChatIndex) return msg;
         }
       );
-      
-      this.$nextTick(function () {
-        if ($('.messages').length!=0){
-          $('.messages')[0].scrollTop = $('.messages')[0].scrollHeight;
-        }
-      });
     });
+  },
+
+  updated(){
+    if(this.$el.querySelector('.messages')){ 
+      this.$el.querySelector('.messages').scrollTop  = this.$el.querySelector('.messages').scrollHeight;
+    }
   },
   
   methods:{
@@ -225,7 +221,6 @@ export default {
       this.showChatLocationPopup = true;  
       this.chatName = "";
       this.map.on('click', this.addMarker);
-     
     },
     openChat(chat, index){ 
       this.showChatList = false;
@@ -241,14 +236,12 @@ export default {
             if(msg.chatId == index) return msg;
           });
         }
-        
-      }else{
+      }
+      else{
         this.messagesByChat = this.messages.filter((msg) => { 
             if(msg.chatId == index) return msg;
           });
-        
       }
-      
     },
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
@@ -266,16 +259,20 @@ export default {
     sendMessage(){
       this.socket.emit('message', this.message, this.openedChatIndex);
       this.message = ''
-    }
+    },
+    clearSearch(){
+      this.searchQuery='';
+    },
   },
 
   computed:{
     filteredChatsList(){
       if (this.searchQuery){
-        return this.chatList.filter((item)=>{
+        return this.chatList.filter((item, index)=>{ 
         return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
       })
-      }else{
+      }
+      else{
         return this.chatList;
       }
     }
