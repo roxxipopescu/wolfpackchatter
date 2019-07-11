@@ -3,11 +3,11 @@
     <div v-if="showChatLocationPopup" class="choose-location">
       {{chooseLocation}}
     </div>
-    <div v-if="showNewChatPopup" class="new-chat">
+    <div v-if="showNewChatPopup" class="new-chat" ref="popup" v-closable="{handler:'deleteNewChat', exclude: ['popup']}">
       <form @submit.prevent="createNewChat()">
         <p class="title">{{newChatTxt}}</p>
         <p class="latlong">{{latTxt}} {{lat}}, {{longTxt}} {{long}}</p>
-        <input type="text" class="chatname-inputfield form-control" v-model="chatName" :placeholder="nameThisChat"/>
+        <input type="text" class="chatname-inputfield form-control" v-model="chatName"  :placeholder="nameThisChat"/>
         <button class="create-chat btn btn-dark" type="submit">{{create}}</button>
       </form>
     </div>
@@ -20,7 +20,7 @@
       </div>
       <div v-if="initChat" class="open-chat">
         <div class="user-info">
-          <img class="user-picture" src="../../static/images/user-picture.png"/>
+          <img class="user-picture" :src="imgUrl"/>
           <span class="username">{{username}}</span>
         </div>
         <div class="chats-container">
@@ -75,6 +75,10 @@ import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
 import $ from 'jquery';
 import io from 'socket.io-client';
+import VueClosable from 'vue-closable';
+import Vue from 'vue';
+
+Vue.use(VueClosable);
 
 export default {
 
@@ -93,6 +97,7 @@ export default {
       searchTxt: "Chat name",
       typeTxt: "Type a message",
       sendTxt: "Send",
+      imgUrl: require('../assets/user-picture.png'),
       username: "",
       searchQuery: "",
       chatName: "",
@@ -116,24 +121,23 @@ export default {
       initChat: false,
       markerIndex: 0,
       removedFirst: 0,
+      click: 0,
       featureGroup: {},
       socket: io('localhost:3000')
     };
   },
   mounted: function(){
-    // Create a Tile Layer and add it to the map
+    
     var tiles = new L.tileLayer('http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png');
-    // Initialize the map and assign it to a variable for later use
     this.map = L.map('map', {
-        // Set latitude and longitude of the map center (required)
         center: [46.7712, 23.6236],
-        // Set the initial zoom level, values 0-18, where 0 is most zoomed-out (required)
         zoom: 5,
         layers: [tiles]
     });
 
     this.featureGroup = L.featureGroup().addTo(this.map).on("click", this.groupClick);
 
+    //overriding leaflet default icon because of library bug(marker path file regex bug)
     this.myIcon = L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon.png',
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.1.0/dist/images/marker-icon-2x.png',
@@ -173,6 +177,7 @@ export default {
   },
   
   methods:{
+    
     createNewChat(){
       this.newChat = {};
       this.newChat['name'] = this.chatName;
@@ -182,19 +187,20 @@ export default {
       localStorage.setItem('storedChats', JSON.stringify(this.chatList));
       localStorage.setItem('markerIndex', JSON.stringify(this.markerIndex)); 
       this.showNewChatPopup = false;
+      this.click = 0;
     },
-    addMarker(e){ 
-      if(!$.isEmptyObject(this.markerList[this.markerIndex])){ 
-        this.map.removeLayer(this.markerList[this.markerIndex]);
+
+    addMarker(e){
+      //lil' workaround to 'escape' the first click so it doesn't become a marker
+      if(!$.isEmptyObject(this.markerList[this.markerIndex])){   
+        this.map.removeLayer(this.markerList[this.markerIndex]); 
         this.removedFirst = 1;
       }
-
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
       this.long = parseFloat(e.latlng.lng).toFixed(2);      
       this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
       this.markerList[this.markerIndex].chatIndex = this.markerIndex;
-
-      if (this.removedFirst == 1){
+      if (this.removedFirst == 1){ 
         this.removedFirst = 0;
         this.showChatLocationPopup = false;  
         this.showNewChatPopup = true;
@@ -202,6 +208,7 @@ export default {
         this.markerIndex++;
       }  
     },
+
     renderStoredData(){
       this.chatList = JSON.parse(localStorage.getItem('storedChats'));
       this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
@@ -210,6 +217,7 @@ export default {
         this.markerList[i].chatIndex = i; 
       }
     },
+
     start(){
       this.initChat = true;
       if (JSON.parse(localStorage.getItem('storedChats'))){
@@ -217,11 +225,25 @@ export default {
       }
       this.socket.emit('join', this.username);
     },
+
     addNewChat(){ 
       this.showChatLocationPopup = true;  
       this.chatName = "";
       this.map.on('click', this.addMarker);
     },
+    
+    deleteNewChat(){
+      if (this.click == 1){  
+        this.markerIndex--;
+        this.map.removeLayer(this.markerList[this.markerIndex]);
+        this.markerList.pop();
+        this.showNewChatPopup = false;
+        this.click = 0;
+      }else{
+        this.click++; 
+      }
+    },
+
     openChat(chat, index){ 
       this.showChatList = false;
       this.openedChat = chat;
@@ -243,12 +265,14 @@ export default {
           });
       }
     },
+
     exitChat(index){
       this.map.removeLayer(this.markerList[index]);
       this.showChatList = true;
       this.searchQuery = "";
       $(".chat-panel").removeClass("chat-active");
     },
+
     groupClick(e){
       for (let i=0; i<this.chatList.length; i++){ 
         if(e.layer.chatIndex == i){ 
@@ -256,13 +280,15 @@ export default {
         }
       }
     },
+
     sendMessage(){
       this.socket.emit('message', this.message, this.openedChatIndex);
       this.message = ''
     },
+
     clearSearch(){
       this.searchQuery='';
-    },
+    }
   },
 
   computed:{

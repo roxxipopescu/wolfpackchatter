@@ -17,6 +17,7 @@
     "popper.js": "^1.15.0",
     "socket.io": "^2.2.0",
     "vue": "^2.6.10",
+    "vue-closable": "0.0.3",
     "vuex": "^3.0.1"
   },
   "devDependencies": {
