@@ -11,7 +11,7 @@
         <button class="create-chat btn btn-dark" type="submit">{{create}}</button>
       </form>
     </div>
-    <div class="chat-panel">
+    <div class="chat-panel" :class="{'chat-active': activeChat}">
       <div v-if="!initChat" class="chat-init">
         <form @submit.prevent="start()">
           <input type="text" class="name-inputfield form-control" v-model="username" :placeholder="yourNamePlaceholder"/>
@@ -73,7 +73,6 @@
 import "leaflet/dist/leaflet.css"
 import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
-import $ from 'jquery';
 import io from 'socket.io-client';
 import VueClosable from 'vue-closable';
 import Vue from 'vue';
@@ -117,6 +116,7 @@ export default {
       messagesByChat: [],
       showNewChatPopup: false,
       showChatLocationPopup: false,
+      activeChat: false,
       showChatList: true,
       initChat: false,
       markerIndex: 0,
@@ -126,8 +126,9 @@ export default {
       socket: io('localhost:3000')
     };
   },
+
   mounted: function(){
-    
+
     var tiles = new L.tileLayer('http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png');
     this.map = L.map('map', {
         center: [46.7712, 23.6236],
@@ -192,7 +193,7 @@ export default {
 
     addMarker(e){
       //lil' workaround to 'escape' the first click so it doesn't become a marker
-      if(!$.isEmptyObject(this.markerList[this.markerIndex])){   
+      if(typeof this.markerList[this.markerIndex] != 'undefined'){   
         this.map.removeLayer(this.markerList[this.markerIndex]); 
         this.removedFirst = 1;
       }
@@ -249,7 +250,7 @@ export default {
       this.openedChat = chat;
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.map); 
-      $(".chat-panel").addClass("chat-active");
+      this.activeChat = true;
       
       if (this.messages.length == 0){ 
         if (JSON.parse(localStorage.getItem('storedMessages')) !== null){
@@ -270,7 +271,7 @@ export default {
       this.map.removeLayer(this.markerList[index]);
       this.showChatList = true;
       this.searchQuery = "";
-      $(".chat-panel").removeClass("chat-active");
+      this.activeChat = false;
     },
 
     groupClick(e){
