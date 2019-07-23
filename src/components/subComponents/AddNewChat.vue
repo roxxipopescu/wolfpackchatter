@@ -37,40 +37,33 @@ export default {
       long: "",
       newChat: {},
       chatList: [],
-
-
-      username: "",
-      searchQuery: "",
       chatName: "",
-      lat: "",
-      long: "",
-      openedChat: "",
-      openedChatIndex: "",
-      message: "",
-      marker: {},
       markerList: [],
-      messages: [],
-      messagesByChat: [],
-      activeChat: false,
-      showChatList: true,
-      initChat: false,
       markerIndex: 0,
-      removedFirst: 0,
       click: 0,
     };
   },
 
+    props:{
+        leafletMap: Object
+    },
+
     created: function(){
-        eventBus.$on('displayPopups', (values) => { 
+        eventBus.$on('DISPLAY_POPUPS', (values) => { 
             this.showNewChatPopup = values.showNewChatPopup;
             this.showChatLocationPopup = values.showChatLocationPopup;
+            this.chatName = values.chatName;
         });
-        eventBus.$on('getCoords', (values) => { 
+        eventBus.$on('GET_COORDINATES', (values) => { 
             this.lat = values.lat;
             this.long = values.long;
         });
-        eventBus.$on('getStoredChats', (chatlist) => { 
+        eventBus.$on('GET_STORED_CHATS', (chatlist) => { 
             this.chatList = chatlist;
+        });
+        eventBus.$on('GET_MARKER_DATA', (values) => { 
+            this.markerList = values.markerList;
+            this.markerIndex = values.markerIndex;
         });
     },
 
@@ -82,6 +75,7 @@ export default {
             this.newChat['lat'] = this.lat;
             this.newChat['lng'] = this.long;
             this.chatList.push(this.newChat);      
+            eventBus.$emit('ADDED_CHAT', this.chatList);
             localStorage.setItem('storedChats', JSON.stringify(this.chatList));
             localStorage.setItem('markerIndex', JSON.stringify(this.markerIndex)); 
             this.showNewChatPopup = false;
@@ -89,12 +83,13 @@ export default {
         },
 
         deleteNewChat(){
-            if (this.click == 1){  
+            if (this.click == 1){
                 this.markerIndex--;
                 this.leafletMap.removeLayer(this.markerList[this.markerIndex]);
                 this.markerList.pop();
                 this.showNewChatPopup = false;
                 this.click = 0;
+                eventBus.$emit('UPDATED_MARKERS', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
             }else{
                 this.click++; 
             }
@@ -103,5 +98,5 @@ export default {
 }
 </script>
 <style lang="sass" scoped>
-  @import "../../scss/styles"
+  @import "../../scss/newChat"
 </style>

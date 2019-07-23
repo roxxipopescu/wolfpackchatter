@@ -1,7 +1,7 @@
 <template>
   <div id="map">
-    <AddNewChat></AddNewChat>
-    <ChatPanel :leafletMap="map" :featureGroup="featureGroup" :myIcon="myIcon" :selectedChatIcon="selectedChatIcon"></ChatPanel>
+    <AddNewChat :leafletMap="map"></AddNewChat>
+    <ChatPanel :leafletMap="map" :myIcon="myIcon" :selectedChatIcon="selectedChatIcon"></ChatPanel>
   </div>
 </template>
 
@@ -21,35 +21,8 @@ export default {
   data: function() {
     return {
       map: {},
-      featureGroup: {},
       myIcon: {},
       selectedChatIcon: {},
-      /*username: "",
-      searchQuery: "",
-      chatName: "",
-      lat: "",
-      long: "",
-      openedChat: "",
-      openedChatIndex: "",
-      message: "",
-      map: {},
-      
-      marker: {},
-      newChat: {},
-      markerList: [],
-      chatList: [],
-      messages: [],
-      messagesByChat: [],
-      showNewChatPopup: false,
-      showChatLocationPopup: false,
-      activeChat: false,
-      showChatList: true,
-      initChat: false,
-      markerIndex: 0,
-      removedFirst: 0,
-      click: 0,
-      featureGroup: {},
-      //socket: io('localhost:3000')*/
     };
   },
 
@@ -61,8 +34,6 @@ export default {
         zoom: 5,
         layers: [tiles]
     });
-
-    this.featureGroup = L.featureGroup().addTo(this.map).on("click", this.groupClick);
 
     //overriding leaflet default icon because of library bug(marker path file regex bug)
     this.myIcon = L.icon({
@@ -87,19 +58,7 @@ export default {
         shadowSize:  [41, 41]
     });
 
-  },
-
-  methods:{
-    
-    /*groupClick(e){
-      for (let i=0; i<this.chatList.length; i++){ 
-        if(e.layer.chatIndex == i){ 
-          this.openChat(this.chatList[i], i);
-        }
-      }
-    }*/
-
-  },
+  }
 }
 </script>
 

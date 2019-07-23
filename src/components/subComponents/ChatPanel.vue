@@ -70,15 +70,11 @@ export default {
   data: function() {
     return {
       emptyChatsMsg: "Nothing to show here.",
-      plusButtonInfo: "Use the + button to create a new chat",
-      //create: "Create",
+      plusButtonInfo: "Use the + button to create a new chat", 
       yourNamePlaceholder: "Your name",
       startTxt: "Start chatting",
-      //chooseLocation: "Choose the chat location on the map",
-      //newChatTxt: "New Chat",
       latTxt: "Latitude",
-      longTxt: "Longitude",
-      //nameThisChat: "Name this chat",
+      longTxt: "Longitude", 
       searchTxt: "Chat name",
       typeTxt: "Type a message",
       sendTxt: "Send",
@@ -93,6 +89,7 @@ export default {
       message: "",
       marker: {},
       newChat: {},
+      featureGroup: {},
       markerList: [],
       chatList: [],
       messages: [],
@@ -102,19 +99,17 @@ export default {
       initChat: false,
       markerIndex: 0,
       removedFirst: 0,
-      click: 0,
       socket: io('localhost:3000')
     };
   },
 
   props:{
       leafletMap: Object,
-      featureGroup: Object,
       myIcon: Object,
       selectedChatIcon: Object
   },
 
-  mounted: function(){
+  mounted: function(){ 
     this.socket.on('message', (data) => { 
       this.messages = [...this.messages, data]; 
       localStorage.setItem('storedMessages', JSON.stringify(this.messages));
@@ -122,6 +117,18 @@ export default {
           if(msg.chatId ==  this.openedChatIndex) return msg;
         }
       );
+    });
+  },
+
+  beforeUpdate(){
+    this.featureGroup = L.featureGroup().addTo(this.leafletMap).on("click", this.groupClick);
+
+    eventBus.$on('ADDED_CHAT', (chatlist) => { 
+        this.chatList = chatlist;
+    });
+    eventBus.$on('UPDATED_MARKERS', (values) => { 
+        this.markerList = values.markerList;
+        this.markerIndex = values.markerIndex;
     });
   },
 
@@ -141,20 +148,22 @@ export default {
       }
       this.lat = parseFloat(e.latlng.lat).toFixed(2); 
       this.long = parseFloat(e.latlng.lng).toFixed(2); 
-      eventBus.$emit('getCoords', {'lat': this.lat, 'long': this.long});     
+      eventBus.$emit('GET_COORDINATES', {'lat': this.lat, 'long': this.long});     
       this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
       this.markerList[this.markerIndex].chatIndex = this.markerIndex;
+      
       if (this.removedFirst == 1){ 
         this.removedFirst = 0;
-        eventBus.$emit('displayPopups', {'showNewChatPopup': true, 'showChatLocationPopup': false});
-        this.leafletMap.off('click', this.addMarker);
         this.markerIndex++;
+        eventBus.$emit('GET_MARKER_DATA', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
+        eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': true, 'showChatLocationPopup': false});
+        this.leafletMap.off('click', this.addMarker);
       }  
     },
 
     renderStoredData(){
       this.chatList = JSON.parse(localStorage.getItem('storedChats'));
-      eventBus.$emit('getStoredChats', this.chatList);
+      eventBus.$emit('GET_STORED_CHATS', this.chatList);
       this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
       for (let i=0; i<this.chatList.length; i++){
         this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.featureGroup);  
@@ -171,8 +180,7 @@ export default {
     },
 
     addNewChat(){ 
-      eventBus.$emit('displayPopups', {'showNewChatPopup': false, 'showChatLocationPopup': true});
-      this.chatName = "";
+      eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': false, 'showChatLocationPopup': true, 'chatName': ""});
       this.leafletMap.on('click', this.addMarker);
     },
 
@@ -182,7 +190,10 @@ export default {
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.leafletMap); 
       this.activeChat = true;
-      
+      this.retrieveStoredChats(index); 
+    },
+
+    retrieveStoredChats(index){
       if (this.messages.length == 0){ 
         if (JSON.parse(localStorage.getItem('storedMessages')) !== null){
           this.messages = JSON.parse(localStorage.getItem('storedMessages')); 
@@ -228,7 +239,7 @@ export default {
       if (this.searchQuery){
         return this.chatList.filter((item)=>{ 
         return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
-      })
+        })
       }
       else{
         return this.chatList;
@@ -239,5 +250,5 @@ export default {
 </script>
 
 <style lang="sass" scoped>
-  @import "../../scss/styles"
+  @import "../../scss/chatPanel"
 </style>
