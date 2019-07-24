@@ -1,0 +1,53 @@
+.chat-title{
+    font-size: 18px;
+}
+
+.opened-chat{
+    text-align: center;
+    .fa-chevron-left{
+        font-size: 32px;
+        float: left;
+        position: relative;
+        cursor: pointer;
+    }
+    .chat-title{
+        display: inline-block;
+        padding-top: 5px;
+    }
+    .messages{
+        height: 460px;
+        overflow-y: auto;
+        padding-top: 20px;
+    }
+    .msg-input{
+        padding-top: 10px;
+        .msg-inputfield{
+            margin-right: 12px;
+            border-top-right-radius: .25rem;
+            border-bottom-right-radius: .25rem;
+        }
+    }
+    .msg-bubble{
+        display: block;
+        padding-bottom: 10px;
+        .userName{
+            font-size: 15px;
+        }
+        .sentMsg{
+            border: 1px solid grey;
+            padding: 5px;
+            border-radius: 2px;
+            background-color: #e1e2e2;
+        }
+        .msg-data{
+            width: 50%;
+            &.right{
+                margin-left: 50%;
+                .sentMsg{
+                    background-color: #f0f8ff;
+                }
+            }
+        }
+    }
+    
+}

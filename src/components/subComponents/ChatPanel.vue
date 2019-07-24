@@ -31,25 +31,8 @@
               </div>
             </div>
           </div>
-          <div v-else class="opened-chat">
-            <i class="fa fa-chevron-left" v-on:click="exitChat(openedChatIndex)"></i>
-            <div class="chat-title">{{openedChat.name}}</div>
-            <div class="chat-body"> 
-              <div class="messages">
-                  <div v-for="(msg, index) in messagesByChat" :key="index" class="msg-bubble">
-                    <div class="msg-data" :class="msg.user == username ? 'right':''">
-                      <div class="userName">{{msg.user}}</div> 
-                      <div class="sentMsg">{{msg.message}}</div>
-                    </div>
-                  </div>
-              </div>
-              <form @submit.prevent="sendMessage">
-                <div class="msg-input input-group">
-                  <input type="text" class="msg-inputfield form-control" v-model="message" :placeholder="typeTxt" />
-                  <button class="send-msg btn btn-dark" type="submit">{{sendTxt}}</button>
-                </div>
-              </form>
-            </div>
+          <div v-else>
+            <ActiveChat :username="username" :markerList="markerList" :openedChatIndex="openedChatIndex" :leafletMap="leafletMap" :openedChat="openedChat"></ActiveChat>
           </div>
         </div>
       </div>
@@ -61,11 +44,14 @@
 import "leaflet/dist/leaflet.css"
 import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
-import io from 'socket.io-client';
 import {eventBus} from "../../main";
-
+import ActiveChat from '../subComponents/ActiveChat'
 
 export default {
+
+   components: {
+    ActiveChat
+  },
 
   data: function() {
     return {
@@ -76,8 +62,6 @@ export default {
       latTxt: "Latitude",
       longTxt: "Longitude", 
       searchTxt: "Chat name",
-      typeTxt: "Type a message",
-      sendTxt: "Send",
       imgUrl: require('../../assets/user-picture.png'),
       username: "",
       searchQuery: "",
@@ -86,20 +70,16 @@ export default {
       long: "",
       openedChat: "",
       openedChatIndex: "",
-      message: "",
       marker: {},
       newChat: {},
       featureGroup: {},
       markerList: [],
       chatList: [],
-      messages: [],
-      messagesByChat: [],
       activeChat: false,
       showChatList: true,
       initChat: false,
       markerIndex: 0,
-      removedFirst: 0,
-      socket: io('localhost:3000')
+      removedFirst: 0
     };
   },
 
@@ -109,18 +89,8 @@ export default {
       selectedChatIcon: Object
   },
 
-  mounted: function(){ 
-    this.socket.on('message', (data) => { 
-      this.messages = [...this.messages, data]; 
-      localStorage.setItem('storedMessages', JSON.stringify(this.messages));
-      this.messagesByChat = this.messages.filter((msg) => {
-          if(msg.chatId ==  this.openedChatIndex) return msg;
-        }
-      );
-    });
-  },
-
   beforeUpdate(){
+    
     this.featureGroup = L.featureGroup().addTo(this.leafletMap).on("click", this.groupClick);
 
     eventBus.$on('ADDED_CHAT', (chatlist) => { 
@@ -129,6 +99,10 @@ export default {
     eventBus.$on('UPDATED_MARKERS', (values) => { 
         this.markerList = values.markerList;
         this.markerIndex = values.markerIndex;
+    });
+    eventBus.$on('LEAVE_CHAT', (values) => { 
+        this.showChatList = values.showChatList;
+        this.activeChat = values.activeChat;
     });
   },
 
@@ -141,29 +115,40 @@ export default {
   methods:{
     
     addMarker(e){
+      this.escapeFirstMapClick();
+      
+      this.lat = parseFloat(e.latlng.lat).toFixed(2); 
+      this.long = parseFloat(e.latlng.lng).toFixed(2); 
+      eventBus.$emit('GET_COORDINATES', {'lat': this.lat, 'long': this.long}); 
+
+      this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
+      this.markerList[this.markerIndex].chatIndex = this.markerIndex;
+      
+      this.addedMarker();
+    },
+
+    addedMarker(){
+      if (this.removedFirst == 1){ 
+        this.removedFirst = 0;
+        this.markerIndex++;
+        this.leafletMap.off('click', this.addMarker);
+        eventBus.$emit('GET_MARKER_DATA', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
+        eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': true, 'showChatLocationPopup': false});
+      }  
+    },
+
+    escapeFirstMapClick(){ 
       //lil' workaround to 'escape' the first click so it doesn't become a marker
       if(typeof this.markerList[this.markerIndex] != 'undefined'){   
         this.leafletMap.removeLayer(this.markerList[this.markerIndex]); 
         this.removedFirst = 1;
       }
-      this.lat = parseFloat(e.latlng.lat).toFixed(2); 
-      this.long = parseFloat(e.latlng.lng).toFixed(2); 
-      eventBus.$emit('GET_COORDINATES', {'lat': this.lat, 'long': this.long});     
-      this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
-      this.markerList[this.markerIndex].chatIndex = this.markerIndex;
-      
-      if (this.removedFirst == 1){ 
-        this.removedFirst = 0;
-        this.markerIndex++;
-        eventBus.$emit('GET_MARKER_DATA', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
-        eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': true, 'showChatLocationPopup': false});
-        this.leafletMap.off('click', this.addMarker);
-      }  
     },
 
     renderStoredData(){
       this.chatList = JSON.parse(localStorage.getItem('storedChats'));
       eventBus.$emit('GET_STORED_CHATS', this.chatList);
+      
       this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
       for (let i=0; i<this.chatList.length; i++){
         this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.featureGroup);  
@@ -176,7 +161,6 @@ export default {
       if (JSON.parse(localStorage.getItem('storedChats'))){
         this.renderStoredData();
       }
-      this.socket.emit('join', this.username);
     },
 
     addNewChat(){ 
@@ -190,30 +174,6 @@ export default {
       this.openedChatIndex = index;
       this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.leafletMap); 
       this.activeChat = true;
-      this.retrieveStoredChats(index); 
-    },
-
-    retrieveStoredChats(index){
-      if (this.messages.length == 0){ 
-        if (JSON.parse(localStorage.getItem('storedMessages')) !== null){
-          this.messages = JSON.parse(localStorage.getItem('storedMessages')); 
-          this.messagesByChat = this.messages.filter((msg) => { 
-            if(msg.chatId == index) return msg;
-          });
-        }
-      }
-      else{
-        this.messagesByChat = this.messages.filter((msg) => { 
-            if(msg.chatId == index) return msg;
-          });
-      }
-    },
-
-    exitChat(index){
-      this.leafletMap.removeLayer(this.markerList[index]);
-      this.showChatList = true;
-      this.searchQuery = "";
-      this.activeChat = false;
     },
 
     groupClick(e){
@@ -222,11 +182,6 @@ export default {
           this.openChat(this.chatList[i], i);
         }
       }
-    },
-
-    sendMessage(){
-      this.socket.emit('message', this.message, this.openedChatIndex);
-      this.message = ''
     },
 
     clearSearch(){
