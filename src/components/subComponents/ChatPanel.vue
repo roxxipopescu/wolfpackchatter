@@ -169,7 +169,7 @@ export default {
     groupClick(e){
       for (let i=0; i<this.chatList.length; i++){ 
         if(e.layer.chatIndex == i){ 
-          this.openChat(this.chatList[i], i);
+          eventBus.$emit('markerClick', {'chat':this.chatList[i], 'index':i});
         }
       }
     },

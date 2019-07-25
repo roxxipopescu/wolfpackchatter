@@ -39,6 +39,12 @@ export default {
       searchQuery: String
     },
 
+    created: function(){
+        eventBus.$on('markerClick',  (values) =>{
+            this.openChat(values.chat, values.index);
+        });
+    },
+
     methods:{
 
         openChat(chat, index){           
