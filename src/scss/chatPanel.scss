@@ -72,37 +72,6 @@
     display: inline-block;
     padding-left: 33px;
 }
-.chatlist{
-    margin-top: 20px;
-    overflow-y: auto;
-    max-height: 485px;
-    .empty-chatlist{
-        p{
-            font-size: 15px;
-        }
-    }
-    .chats{
-        width: 97%;
-        padding-bottom: 15px;
-        border-bottom: 1px solid black;
-        cursor: pointer;
-        margin-bottom: 10px;
-        padding-left: 7px;
-    }
-    .chat-coords{
-        display: inline-block;
-        font-size: 14px;
-        color: #6c757d;
-        margin-top: 5px;
-    }
-    
-    .fa-chevron-right{
-        font-size: 32px;
-        float: right;
-        position: relative;
-        bottom: 10px;
-    }
-}
 .chat-title{
     font-size: 18px;
 }

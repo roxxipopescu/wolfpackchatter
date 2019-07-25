@@ -18,18 +18,8 @@
             <i v-if="searchQuery" class="fa fa-times" v-on:click="clearSearch()"></i>
             <i class="fa fa-plus-circle" v-on:click="addNewChat"></i>
           </div>
-          <div class="chatlist" v-if="showChatList">
-            <div v-if="chatList.length == 0" class="empty-chatlist">
-              <p>{{emptyChatsMsg}}</p>
-              <p>{{plusButtonInfo}}</p>
-            </div>
-            <div v-else> 
-              <div class="chats" :key="index" v-for="(chat, index) in filteredChatsList" v-on:click="openChat(chat, index)">
-                <div class="chat-title">{{chat.name}}</div>
-                <div class="chat-coords">{{latTxt}} {{chat.lat}}, {{longTxt}} {{chat.lng}}</div>
-                <i class="fa fa-chevron-right"></i>
-              </div>
-            </div>
+          <div v-if="showChatList">
+            <ChatList :searchQuery="searchQuery" :markerList="markerList" :leafletMap="leafletMap" :selectedChatIcon="selectedChatIcon" :chatList="chatList"></ChatList>
           </div>
           <div v-else>
             <ActiveChat :username="username" :markerList="markerList" :openedChatIndex="openedChatIndex" :leafletMap="leafletMap" :openedChat="openedChat"></ActiveChat>
@@ -46,18 +36,18 @@ import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
 import {eventBus} from "../../main";
 import ActiveChat from '../subComponents/ActiveChat';
+import ChatList from '../subComponents/ChatList';
 import ChatService from "../../services/chatStorage.service";
 
 export default {
 
    components: {
-    ActiveChat
+    ActiveChat,
+    ChatList
   },
 
   data: function() {
     return {
-      emptyChatsMsg: "Nothing to show here.",
-      plusButtonInfo: "Use the + button to create a new chat", 
       yourNamePlaceholder: "Your name",
       startTxt: "Start chatting",
       latTxt: "Latitude",
@@ -104,6 +94,12 @@ export default {
     eventBus.$on('LEAVE_CHAT', (values) => { 
         this.showChatList = values.showChatList;
         this.activeChat = values.activeChat;
+    });
+    eventBus.$on('GET_OPENED_CHAT', (values) => { 
+        this.showChatList = values.showChatList;
+        this.activeChat = values.activeChat;
+        this.openedChat = values.openedChat;
+        this.openedChatIndex = values.openedChatIndex;
     });
   },
 
@@ -170,14 +166,6 @@ export default {
       this.leafletMap.on('click', this.addMarker);
     },
 
-    openChat(chat, index){ 
-      this.showChatList = false;
-      this.openedChat = chat;
-      this.openedChatIndex = index;
-      this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.leafletMap); 
-      this.activeChat = true;
-    },
-
     groupClick(e){
       for (let i=0; i<this.chatList.length; i++){ 
         if(e.layer.chatIndex == i){ 
@@ -188,19 +176,6 @@ export default {
 
     clearSearch(){
       this.searchQuery='';
-    }
-  },
-
-  computed:{
-    filteredChatsList(){
-      if (this.searchQuery){
-        return this.chatList.filter((item)=>{ 
-          return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
-        })
-      }
-      else{
-        return this.chatList;
-      }
     }
   }
 }
