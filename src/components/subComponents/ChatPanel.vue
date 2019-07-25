@@ -45,7 +45,8 @@ import "leaflet/dist/leaflet.css"
 import "font-awesome/css/font-awesome.css";
 import L from 'leaflet';
 import {eventBus} from "../../main";
-import ActiveChat from '../subComponents/ActiveChat'
+import ActiveChat from '../subComponents/ActiveChat';
+import ChatService from "../../services/chatStorage.service";
 
 export default {
 
@@ -124,17 +125,17 @@ export default {
       this.markerList[this.markerIndex] = L.marker(e.latlng, {icon: this.myIcon}).addTo(this.featureGroup);   
       this.markerList[this.markerIndex].chatIndex = this.markerIndex;
       
-      this.addedMarker();
+      if (this.removedFirst == 1){ 
+        this.addedMarker();
+      }
     },
 
-    addedMarker(){
-      if (this.removedFirst == 1){ 
-        this.removedFirst = 0;
-        this.markerIndex++;
-        this.leafletMap.off('click', this.addMarker);
-        eventBus.$emit('GET_MARKER_DATA', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
-        eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': true, 'showChatLocationPopup': false});
-      }  
+    addedMarker(){ 
+      this.removedFirst = 0;
+      this.markerIndex++;
+      this.leafletMap.off('click', this.addMarker);
+      eventBus.$emit('GET_MARKER_DATA', {'markerList': this.markerList, 'markerIndex': this.markerIndex});
+      eventBus.$emit('DISPLAY_POPUPS', {'showNewChatPopup': true, 'showChatLocationPopup': false});
     },
 
     escapeFirstMapClick(){ 
@@ -146,10 +147,11 @@ export default {
     },
 
     renderStoredData(){
-      this.chatList = JSON.parse(localStorage.getItem('storedChats'));
+      this.chatList = JSON.parse(ChatService.fetchAllMessages('storedChats')); 
       eventBus.$emit('GET_STORED_CHATS', this.chatList);
       
-      this.markerIndex = JSON.parse(localStorage.getItem('markerIndex'));
+      this.markerIndex = JSON.parse(ChatService.fetchAllMessages('markerIndex'));
+      
       for (let i=0; i<this.chatList.length; i++){
         this.markerList[i] = L.marker([this.chatList[i].lat, this.chatList[i].lng], {icon: this.myIcon}).addTo(this.featureGroup);  
         this.markerList[i].chatIndex = i; 
@@ -157,8 +159,8 @@ export default {
     },
 
     start(){
-      this.initChat = true;
-      if (JSON.parse(localStorage.getItem('storedChats'))){
+      this.initChat = true; 
+      if (ChatService.fetchAllMessages('storedChats') !== null){
         this.renderStoredData();
       }
     },
@@ -193,7 +195,7 @@ export default {
     filteredChatsList(){
       if (this.searchQuery){
         return this.chatList.filter((item)=>{ 
-        return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
+          return item.name.toLowerCase().startsWith(this.searchQuery.toLowerCase());
         })
       }
       else{

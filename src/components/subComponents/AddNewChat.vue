@@ -18,6 +18,7 @@
 import VueClosable from 'vue-closable';
 import Vue from 'vue';
 import {eventBus} from "../../main";
+import ChatService from "../../services/chatStorage.service";
 
 Vue.use(VueClosable);
 
@@ -70,16 +71,20 @@ export default {
     methods:{
         
         createNewChat(){
-            this.newChat = {};
-            this.newChat['name'] = this.chatName;
-            this.newChat['lat'] = this.lat;
-            this.newChat['lng'] = this.long;
-            this.chatList.push(this.newChat);      
+            this.chatList.push(this.createNewChatObject(this.chatName, this.lat, this.long));      
             eventBus.$emit('ADDED_CHAT', this.chatList);
-            localStorage.setItem('storedChats', JSON.stringify(this.chatList));
-            localStorage.setItem('markerIndex', JSON.stringify(this.markerIndex)); 
+            ChatService.saveMessage('storedChats', this.chatList);
+            ChatService.saveMessage('markerIndex', this.markerIndex);
             this.showNewChatPopup = false;
             this.click = 0;
+        },
+
+        createNewChatObject(name, lat, long){
+            this.newChat = {};
+            this.newChat['name'] = name;
+            this.newChat['lat'] = lat;
+            this.newChat['lng'] = long;    
+            return this.newChat;
         },
 
         deleteNewChat(){

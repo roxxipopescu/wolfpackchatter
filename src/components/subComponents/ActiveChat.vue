@@ -25,6 +25,7 @@
 import io from 'socket.io-client';
 import "font-awesome/css/font-awesome.css";
 import {eventBus} from "../../main";
+import ChatService from "../../services/chatStorage.service";
 
 export default {
 
@@ -53,36 +54,30 @@ export default {
         this.socket.emit('join', this.username);
         this.socket.on('message', (data) => { 
             this.messages = [...this.messages, data]; 
-            localStorage.setItem('storedMessages', JSON.stringify(this.messages));
-            this.messagesByChat = this.messages.filter((msg) => {
-                if(msg.chatId ==  this.openedChatIndex) return msg;
-                }
-            );
+            ChatService.saveMessage('storedMessages', this.messages);
+            this.messagesByChat =  this.filterMessagesByChat(this.openedChatIndex);
         });
     },
 
     updated(){
         if(this.$el.querySelector('.messages')){ 
-        this.$el.querySelector('.messages').scrollTop  = this.$el.querySelector('.messages').scrollHeight;
+            this.$el.querySelector('.messages').scrollTop  = this.$el.querySelector('.messages').scrollHeight;
         }
     },
 
     methods:{
 
         retrieveStoredChats(index){
-            if (this.messages.length == 0){ 
-                if (JSON.parse(localStorage.getItem('storedMessages')) !== null){
-                this.messages = JSON.parse(localStorage.getItem('storedMessages')); 
-                this.messagesByChat = this.messages.filter((msg) => { 
-                    if(msg.chatId == index) return msg;
-                });
-                }
+            if (this.messages.length == 0 && ChatService.fetchAllMessages('storedMessages') !== null){ 
+                this.messages = JSON.parse(ChatService.fetchAllMessages('storedMessages')); 
             }
-            else{
-                this.messagesByChat = this.messages.filter((msg) => { 
-                    if(msg.chatId == index) return msg;
-                });
-            }
+            this.messagesByChat =  this.filterMessagesByChat(index);
+        },
+
+        filterMessagesByChat(index){
+            return this.messages.filter((msg) => {
+                if(msg.chatId ==  index) return msg;
+            });
         },
 
         sendMessage(){
