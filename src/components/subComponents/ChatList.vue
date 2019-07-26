@@ -39,17 +39,17 @@ export default {
       searchQuery: String
     },
 
-    created: function(){
-        eventBus.$on('markerClick',  (values) =>{
+    created(){ 
+        eventBus.$on('markerClick',  (values) =>{ 
             this.openChat(values.chat, values.index);
         });
     },
 
     methods:{
 
-        openChat(chat, index){           
+        openChat(chat, index){     
             eventBus.$emit('GET_OPENED_CHAT', {'showChatList': false, 'openedChat': chat, 'openedChatIndex': index, 'activeChat': true});
-            this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.leafletMap);            
+            this.markerList[index] = L.marker([chat.lat, chat.lng], {icon: this.selectedChatIcon}).addTo(this.leafletMap);       
         },
     },
 
@@ -64,6 +64,10 @@ export default {
                 return this.chatList;
             }
         }
+    },
+
+    beforeDestroy() {
+        eventBus.$off('markerClick');
     }
 }
 </script>
